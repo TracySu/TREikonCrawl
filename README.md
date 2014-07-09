@@ -21,6 +21,7 @@ eikoncrawl- version 1.0
 6. auto check and fill missing dates
 7. auto check unretrived data and retry 3 times 
 8. auto save every 5 mins  
+9. logging status is visible as the program runs 
 
 
 The script includes following three files, which are:
