@@ -297,8 +297,6 @@ End With
 End Sub
 
 
-' algorithm mean, and median for spread
-' geomatrical mean is not calculated because negative and zero numbers are included
 Sub spreads(i As Long)
         
     With Worksheets("Sheet3")
@@ -313,6 +311,7 @@ Sub spreads(i As Long)
     Worksheets("Sheet2").Range("N" & i & "").Value = med
     Worksheets("Sheet2").Range("P" & i & "").Value = wtd
 End Sub
+
 
 
 Sub quotes(i As Long)
