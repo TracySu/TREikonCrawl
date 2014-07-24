@@ -1,10 +1,10 @@
-' ##########################################################
-' Author: Yuanjia Su
-' Contact: yuanjia.su.13 at ucl.ac.uk
+' ===============================================
+' Author: Yuanjia Su <yuanjia.su.13 at ucl.ac.uk>
 '
-' --
-' Copyright (c) 2014 Yuanjia Su
-' ##########################################################
+' Description:
+'         1. Get indecies and symbols
+'         2. Get daily data
+' ===============================================
 
 
 ' retrieve indecies with constituent names
@@ -53,15 +53,26 @@ Sub getIndexNames()
     .Range("A1244").Formula = _
     "=TR("".PX"",""TR.IndexConstituentRIC"",""RH=In"")"
 
-'    .Range("A1257").Formula = _
-'    "=TR("".FTMIB"",""TR.IndexConstituentRIC"",""RH=In"")"
+    .Range("A1252").Formula = _
+    "=TR("".AEX"",""TR.IndexConstituentRIC"",""RH=In"")"
+
+    .Range("A1277").Formula = _
+    "=TR("".OMXC20"",""TR.IndexConstituentRIC"",""RH=In"")"
+    
+    .Range("A1297").Formula = _
+    "=TR("".OBX"",""TR.IndexConstituentRIC"",""RH=In"")"
+
+    .Range("A1322").Formula = _
+    "=TR("".FTMC"",""TR.IndexConstituentRIC"",""RH=In"")"
+    
+    .Range("A1571").Formula = _
+    "=TR("".SDAXI"",""TR.IndexConstituentRIC"",""RH=In"")"
 
     End With
 
 End Sub
 
 
-'
 Sub checkZeros()
 
 With Worksheets("Sheet1")
@@ -79,11 +90,23 @@ With Worksheets("Sheet1")
 End With
 End Sub
 
+Sub delZeros()
+
+With Worksheets("Sheet2")
+    lastRow = .Cells(.Rows.count, "A").End(xlUp).Row
+    For i = 68148 To 69193
+        If (Range("G" & i & "").Value = 0 Or Range("B" & i & "").Value = 0) Then
+        Range("A" & i & "").EntireRow.Delete
+        End If
+    Next
+End With
+
+End Sub
 
 ' anto fill dates that are not retrived in cells
 Sub dateCheck()
-With Worksheets("Sheet2")
 
+With Worksheets("Sheet2")
     For i = 1 To 75291
     If Range(" G" & i & " ").Value = "00:00:00" Then
         Range("G" & i + 1 & "").Select
@@ -100,34 +123,47 @@ Sub currCheck()
 With Worksheets("Sheet2")
     For i = 1 To 75291
 
-    If Range("E" & i & "").Formula = "United Kingdom" Then
-        Range("C" & i & " ").Formula = "GBp"
-    ElseIf Range("E" & i & "").Formula = "Switzerland" Then
-        Range(" C" & i & " ").Value = "CHF"
-    ElseIf Range("E" & i & "").Formula = "Germany" Then
-        Range(" C" & i & " ").Value = "EUR"
-    ElseIf Range("E" & i & "").Formula = "France" Then
-        Range(" C" & i & " ").Value = "EUR"
-    ElseIf Range("E" & i & "").Formula = "Netherlands" Then
-        Range(" C" & i & " ").Value = "EUR"
-    ElseIf Range("E" & i & "").Formula = "Belgium" Then
-        Range(" C" & i & " ").Value = "EUR"
-    ElseIf Range("E" & i & "").Formula = "Spain" Then
-        Range(" C" & i & " ").Value = "EUR"
-    ElseIf Range("E" & i & "").Formula = "Sweden" Then
-        Range(" C" & i & " ").Value = "SEK"
-    ElseIf Range("E" & i & "").Formula = "Finland" Then
-        Range(" C" & i & " ").Value = "EUR"
-    ElseIf Range("E" & i & "").Formula = "Portugal" Then
-        Range(" C" & i & " ").Value = "EUR"
-    ElseIf Range("E" & i & "").Formula = "Turkey" Then
-        Range(" C" & i & " ").Value = "TRY"
-    ElseIf Range("E" & i & "").Formula = "Poland" Then
-        Range(" C" & i & " ").Value = "PLN"
-    ElseIf Range("E" & i & "").Formula = "Greece" Then
-        Range(" C" & i & " ").Value = "EUR"
-    ElseIf Range("E" & i & "").Formula = "Czech Republic" Then
-        Range(" C" & i & " ").Value = "CZK"
+    If Range("C" & i & "").Formula = "GBp" Then
+        Range("E" & i & " ").Formula = "United Kingdom"
+        
+    ElseIf Range("C" & i & "").Formula = "CHF" Then
+        Range(" E" & i & " ").Value = "Switzerland"
+        
+    ElseIf Range("C" & i & "").Formula = "CZK" Then
+        Range(" E" & i & " ").Value = "Czech Republic"
+        
+    ElseIf Range("C" & i & "").Formula = "DKK" Then
+        Range(" E" & i & " ").Value = "Denmark"
+        
+    ElseIf Range("C" & i & "").Formula = "Netherlands" Then
+        Range(" E" & i & " ").Value = "EUR"
+        
+    ElseIf Range("C" & i & "").Formula = "Belgium" Then
+        Range(" E" & i & " ").Value = "EUR"
+        
+    ElseIf Range("C" & i & "").Formula = "Spain" Then
+        Range(" E" & i & " ").Value = "EUR"
+        
+    ElseIf Range("C" & i & "").Formula = "Sweden" Then
+        Range(" E" & i & " ").Value = "SEK"
+        
+    ElseIf Range("C" & i & "").Formula = "Finland" Then
+        Range(" E" & i & " ").Value = "EUR"
+        
+    ElseIf Range("C" & i & "").Formula = "Portugal" Then
+        Range(" E" & i & " ").Value = "EUR"
+        
+    ElseIf Range("C" & i & "").Formula = "Turkey" Then
+        Range(" E" & i & " ").Value = "TRY"
+        
+    ElseIf Range("C" & i & "").Formula = "Poland" Then
+        Range(" E" & i & " ").Value = "PLN"
+        
+    ElseIf Range("C" & i & "").Formula = "Greece" Then
+        Range(" E" & i & " ").Value = "EUR"
+        
+    ElseIf Range("C" & i & "").Formula = "Czech Republic" Then
+        Range(" E" & i & " ").Value = "CZK"
     End If
     
     Next
@@ -135,14 +171,14 @@ End With
 
 End Sub
 
-' function to return to array of stock names
+' array of stock names
 Function getStockNames() As String()
 
-    Dim arr(1256) As String
+    Dim arr(1615) As String
     Dim i As Integer
     i = 0
 
-    For Each c In Worksheets("Sheet1").Range("B2:B1256")
+    For Each c In Worksheets("Sheet1").Range("B2:B1615")
         arr(i) = Chr(34) & c.Value & Chr(34)
         i = i + 1
     Next c
@@ -151,14 +187,14 @@ Function getStockNames() As String()
     
 End Function
 
-' function to return all index names
+' array of index names
 Function getIndNames() As String()
 
-    Dim arr(1256) As String
+    Dim arr(1615) As String
     Dim i As Integer
     i = 0
 
-    For Each c In Worksheets("Sheet1").Range("A2:A1256")
+    For Each c In Worksheets("Sheet1").Range("A2:A1615")
         arr(i) = Chr(34) & c.Value & Chr(34)
         i = i + 1
     Next c
@@ -168,39 +204,41 @@ Function getIndNames() As String()
 End Function
 
 
-' retrieve intraday data
+' retrieve daily data
 Sub getStockPrices()
     
     stocks = getStockNames
     indxs = getIndNames
     numStocks = Application.CountA(stocks) - 1
-    flag = 2
+    flag = 67104
+
+    For i = 1252 To numStocks - 1
+
+    Debug.Print i
+        ' Stock symbols
+        temp = flag + 58
+        Worksheets("Sheet2").Range("A" & flag & ":A" & temp & " ").Formula = _
+        " " & stocks(i) & " "
+
+        ' Index names
+        Worksheets("Sheet2").Range("B" & flag & ":B" & temp & " ").Formula = _
+        " " & indxs(i) & " "
+
+         ' get stock info
+         Worksheets("Sheet2").Range("C" & flag & ":C" & temp & " ").Formula = _
+         "=TR(" & stocks(i) & ",""CURRENCY;TR.CompanyMarketCap;TR.ExchangeCountry"")"
+
+         ' get stock prices
+         Worksheets("Sheet2").Range("G" & flag & " ").Formula = _
+         "=RHistory(" & stocks(i) & ",""TRDPRC_1.Timestamp;TRDPRC_1.Open;TRDPRC_1.High;TRDPRC_1.Low;TRDPRC_1.Close;TRDPRC_1.Volume"",""START:02-May-2014 END:30-Jul-2014 INTERVAL:1D"",,""SORT:ASC"")"
+
+         flag = flag + 55
+         ActiveWorkbook.Save
+    Next i
     
-'    For i = 0 To numStocks - 1
-'        ' Stock symbols
-'        temp = flag + 60
-'        Worksheets("Sheet2").Range("A" & flag & ":A" & temp & " ").Formula = _
-'        " " & stocks(i) & " "
-'
-'        ' Index names
-'        Worksheets("Sheet2").Range("B" & flag & ":B" & temp & " ").Formula = _
-'        " " & indxs(i) & " "
-'
-'         ' get stock info
-'         Worksheets("Sheet2").Range("C" & flag & ":C" & temp & " ").Formula = _
-'         "=TR(" & stocks(i) & ",""CURRENCY;TR.CompanyMarketCap;TR.ExchangeCountry"")"
-'
-'         ' get stock prices
-'         Worksheets("Sheet2").Range("G" & flag & " ").Formula = _
-'         "=RHistory(" & stocks(i) & ",""TRDPRC_1.Timestamp;TRDPRC_1.Open;TRDPRC_1.High;TRDPRC_1.Low;TRDPRC_1.Close;TRDPRC_1.Volume"",""START:02-Apr-2014 END:30-Jun-2014 INTERVAL:1D"",,""SORT:ASC"")"
-'
-'         flag = flag + 60
-'         ActiveWorkbook.Save
-'    Next i
-    
-    ' ----------------
+    ' ------------------------------------------------
     ' Set colomn names
-    ' ----------------
+    ' ------------------------------------------------
     Worksheets("Sheet2").Range("A1").Formula = _
     "Stock"
     
@@ -238,77 +276,46 @@ Sub getStockPrices()
     "Volume"
     
     Worksheets("Sheet2").Range("M1").Formula = _
-    "AvgBASpread(BP)"
+    "AvgSpread(BPS)"
     
     Worksheets("Sheet2").Range("N1").Formula = _
-    "GeoAvgBASpread(BP)"
+    "MedSpread(BPS)"
     
     Worksheets("Sheet2").Range("O1").Formula = _
-    "NumberOfTrades"
+    "GeoSpread(BPS)"
     
     Worksheets("Sheet2").Range("P1").Formula = _
-    "NumberOfQuotes"
+    "WtdSpread(BPS)"
     
     Worksheets("Sheet2").Range("Q1").Formula = _
-    "AvgBidVolume"
+    "NumOfQuotes"
     
     Worksheets("Sheet2").Range("R1").Formula = _
-    "AvgAskVolume"
+    "AvgQuoteSize"
     
     Worksheets("Sheet2").Range("S1").Formula = _
-    "AvgBidPrice"
+    "MedQuoteSize"
     
     Worksheets("Sheet2").Range("T1").Formula = _
-    "AvgAskPrice"
+    "GeoQuoteSize"
     
     Worksheets("Sheet2").Range("U1").Formula = _
-    "AvgTradePrice"
+    "WtdQuoteSize"
     
     Worksheets("Sheet2").Range("V1").Formula = _
-    "AvgTradeVolume"
+    "NumOfTrades"
     
     Worksheets("Sheet2").Range("W1").Formula = _
-    "AvgVWAP"
+    "AvgTradeSize"
     
     Worksheets("Sheet2").Range("X1").Formula = _
-    "AvgBidTimeDiff"
+    "MedTradeSize"
     
     Worksheets("Sheet2").Range("Y1").Formula = _
-    "AvgAskTimeDiff"
+    "GeoTradeSize"
     
     Worksheets("Sheet2").Range("Z1").Formula = _
-    "AvgTradeTimeDiff"
-    
-    Worksheets("Sheet2").Range("AA1").Formula = _
-    "WtdBidPrice"
-    
-    Worksheets("Sheet2").Range("AB1").Formula = _
-    "WtdAskPrice"
-    
-    Worksheets("Sheet2").Range("AC1").Formula = _
-    "WtdB/ASpread"
-    
-    Worksheets("Sheet2").Range("AD1").Formula = _
-    "MedianBASpread"
-    
-    Worksheets("Sheet2").Range("AE1").Formula = _
-    "MedianBidPrice"
-    
-    Worksheets("Sheet2").Range("AF1").Formula = _
-    "MedianAskPrice"
-    
-    Worksheets("Sheet2").Range("AG1").Formula = _
-    "MedTradePrice"
-    
-    Worksheets("Sheet2").Range("AH1").Formula = _
-    "GeoBidPrice"
-
-    Worksheets("Sheet2").Range("AI1").Formula = _
-    "GeoAskPrice"
-    
-    Worksheets("Sheet2").Range("AJ1").Formula = _
-    "GeoTradePrice"
-    
+    "WtdTradeSize"
 End Sub
 
 
@@ -329,31 +336,50 @@ Sub getCAP()
             Select Case currcy
             Case "GBp"
                 ratio = Worksheets("Sheet1").Range("F2").Value
-                cap = ratio * marketCap
-            Case "Euro"
+                cap = ratio * marketCap * 100
+            Case "CHF"
                 ratio = Worksheets("Sheet1").Range("F3").Value
                 cap = ratio * marketCap
-            Case Else
-            
+            Case "EUR"
+                ratio = Worksheets("Sheet1").Range("F4").Value
+                cap = ratio * marketCap
+            Case "SEK"
+                ratio = Worksheets("Sheet1").Range("F5").Value
+                cap = ratio * marketCap
+            Case "TRY"
+                ratio = Worksheets("Sheet1").Range("F6").Value
+                cap = ratio * marketCap
+            Case "PLN"
+                ratio = Worksheets("Sheet1").Range("F7").Value
+                cap = ratio * marketCap
+            Case "CZK"
+                ratio = Worksheets("Sheet1").Range("F8").Value
+                cap = ratio * marketCap
+            Case "NOK"
+                ratio = Worksheets("Sheet1").Range("F9").Value
+                cap = ratio * marketCap
+            Case "DKK"
+                ratio = Worksheets("Sheet1").Range("F10").Value
+                cap = ratio * marketCap
             End Select
         
             If cap < 50000000 Then
-                capType = "Nano-cap"
+                capType = "Nano"
                 
             ElseIf cap > 50000000 And cap < 250000000 Then
-                capType = "Micro-cap"
+                capType = "Micro"
             
             ElseIf cap > 250000000 And cap < 2000000000 Then
-                capType = "Small-cap"
+                capType = "Small"
             
             ElseIf cap > 2000000000 And cap < 10000000000# Then
-                capType = "Mid-cap"
+                capType = "Mid"
                         
             ElseIf cap > 10000000000# And cap < 200000000000# Then
-                capType = "Large-cap"
+                capType = "Large"
             
             ElseIf cap > 200000000000# Then
-                capType = "Mega-cap"
+                capType = "Mega"
             
             End If
             
@@ -365,20 +391,29 @@ Sub getCAP()
 End Sub
 
 
-' delet dates that Eikon can no longer retrived
-' as the past 3 month only restriction
+' delet dates Eikon can no longer retrive (3-month restriction)
 Sub deletDate()
 
 With Worksheets("Sheet2")
 
- For i = 55 To 69000
-    If CDate(Range("G" & i & "").Value) < "15/04/2014" Then
-    Range("G" & i & "").EntireRow.Delete
-    
-    If Range("G" & i & "").Value = "" Or CDate(Range("G" & i & "").Value) < "15/04/2014" Then
-    Range("G" & i & "").EntireRow.Delete
+ For i = 55413 To 55463
+'    If CDate(Range("G" & i & "").Value) < "15/04/2014" Then
+'    Range("G" & i & "").EntireRow.Delete
+    Debug.Print i
+    If Range("G" & i & "").Value = "" Or Range("H" & i & "").Formula = "#N/A" Or Range("D" & i & "").Value = "" Then
+        Range("G" & i & "").EntireRow.Delete
     End If
   Next
   
 End With
 End Sub
+
+' convert formulas to static values
+Sub stable()
+
+    Dim ws As Worksheet
+    Set ws = ThisWorkbook.Sheets("Sheet2")
+    ws.UsedRange.Value = ws.UsedRange.Value
+  
+End Sub
+

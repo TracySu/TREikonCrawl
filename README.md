@@ -24,6 +24,12 @@ eikoncrawl- version 1.0
 9. logging status is visible as the program runs 
 
 
+*24/07 UPDATES:*
+
+- Refined metrics 
+- Excel formulas replace VBA functions, hence more efficient  
+- more market indecies are added
+
 The script includes following three files, which are:
 
 - main.bas

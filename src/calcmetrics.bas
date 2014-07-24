@@ -1,13 +1,11 @@
-' ##########################################################
-' Author: Yuanjia Su
-' Contact: yuanjia.su.13 at ucl.ac.uk
+' ===============================================
+' Author: Yuanjia Su <yuanjia.su.13 at ucl.ac.uk>
 '
-' --
-' Copyright (c) 2014 Yuanjia Su
-' ##########################################################
+' Description:
+'         Retrive tick data and calculate metrics
+' ===============================================
 
-
-Sub calcMetrics(i As Integer, maxI As Integer, retry As Integer)
+ Sub calcmetrics(i As Long, maxI As Long, retry As Integer)
     Debug.Print "calcMetrics: " & i & ", retry " & retry
     
     Dim name As String
@@ -24,8 +22,7 @@ Sub calcMetrics(i As Integer, maxI As Integer, retry As Integer)
             Call getTickData(name, tickDate)
             
             ' wait 4 seconds until data retrieving finished
-            ' then calculate metrics
-            Application.OnTime Now + TimeValue("00:00:4"), _
+            Application.OnTime Now + TimeValue("00:00:5"), _
             "'metrics " & i & ", " & maxI & ", " & retry & "'"
         End With
     End With
@@ -33,7 +30,7 @@ Sub calcMetrics(i As Integer, maxI As Integer, retry As Integer)
     
 End Sub
 
-Sub metrics(i As Integer, maxI As Integer, retry As Integer)
+Sub metrics(i As Long, maxI As Long, retry As Integer)
     Debug.Print "metrics: " & i & ", retry " & retry
 
     On Error Resume Next
@@ -47,38 +44,33 @@ Sub metrics(i As Integer, maxI As Integer, retry As Integer)
     If Not date3 = date2 Then
         Debug.Print "Error: " & i & ", retry " & retry
         If retry < 3 Then
-            Call calcMetrics(i, maxI, retry + 1)
+            Call calcmetrics(i, maxI, retry + 1)
         Else
-            Call calcMetrics(i + 1, maxI, 1)
+            Call calcmetrics(i + 1, maxI, 1)
         End If
         Exit Sub
     End If
+    
+    ' delete dates out of trading range
+    deltDates
+    
+    ' calculate
+    ActiveSheet.EnableCalculation = False
         
-    ' metrics
-    spread (i)
-    getVWAP
-    avgSpread (i)
-    numTrades (i)
-    numQuotes (i)
-    avgBidSize (i)
-    avgAskSize (i)
-    avgBidPrice (i)
-    avgAskPrice (i)
-    avgTradePrice (i)
-    avgTradeVolume (i)
-    avgVWAP (i)
-    avgTimeDiff (i)
-    weitdSpread (i)
+    spreads (i)
+    quotes (i)
+    trades (i)
+
+    ActiveSheet.EnableCalculation = True
     
-    
-    ' save the file every 20 calculations, roughly every 5 mins
+    ' save every 20 calculations, roughly 5 mins
     If i Mod 20 = 0 Then
         Debug.Print "save...." & i
         ActiveWorkbook.Save
     End If
     
     If i + 1 <= maxI Then
-        Call calcMetrics(i + 1, maxI, 1)
+        Call calcmetrics(i + 1, maxI, 1)
     Else
         Debug.Print "Finished. " & Now
         Debug.Print "saving... "
@@ -87,6 +79,35 @@ Sub metrics(i As Integer, maxI As Integer, retry As Integer)
     
 End Sub
 
+Sub deltDates()
+    
+    With Worksheets("Sheet3")
+    lastRow = .Cells(.Rows.count, "A").End(xlUp).Row
+    
+    For j = 2 To lastRow
+        timestmp = CDate(Format(Range("A" & j & "").Value, "hh:mm:ss"))
+        If timestmp > "16:50:00" Then
+            Range("A" & j & ": F" & j & "").Formula = ""
+        Else
+            Exit For
+        End If
+    Next
+
+    End With
+
+End Sub
+
+
+Sub errorCheck()
+    
+    With Worksheets("Sheet3")
+    lastRow = .Cells(.Rows.count, "A").End(xlUp).Row
+    
+    ' delet empty rows
+    Cells.Replace "#N/A", "", xlWhole
+    
+    End With
+End Sub
 
 Sub getTickData(n As String, d As String)
     Debug.Print "getTickData: "
@@ -114,306 +135,220 @@ Sub getTickData(n As String, d As String)
     
 End Sub
 
-Sub spread(i As Integer)
 
-    Dim lastRow
-    With Worksheets("Sheet3")
-        
-        bidMaxRow = .Cells(.Rows.count, "B").End(xlUp).Row
-        askMaxRow = .Cells(.Rows.count, "E").End(xlUp).Row
-        .Range("J:J").Formula = ""
-        
-        If bidMaxRow > askMaxRow Then
-            lastRow = askMaxRow
-        Else
-            lastRow = bidMaxRow
-        End If
-        
-        ' calculate spread in base point
-        .Range("J2:J" & lastRow & " ").Formula = _
-        "= (E:E-B:B)/E:E * 10000"
-        
-        Range("J1").Value = "Bid/Ask Spread"
-    End With
+Sub formulas()
 
-End Sub
+With Worksheets("Sheet3")
 
-Sub getVWAP()
+    Dim ws As Worksheet
+    Set ws = ThisWorkbook.Sheets("Sheet3")
     
-    With Worksheets("Sheet3")
-        lastPriceRow = .Cells(.Rows.count, "I").End(xlUp).Row
-        .Range("K:K").Formula = ""
-        .Range("L:L").Formula = ""
-        .Range("M:M").Formula = ""
-        .Range("N:N").Formula = ""
-        
-        For j = 2 To lastPriceRow
-            
-            If Not IsNumeric(Range("H" & j & "").Formula) Then
-                Range("H" & j & "").Formula = ""
-            End If
-        
-            If Not IsNumeric(Range("I" & j & "").Formula) Then
-                Range("I" & j & "").Formula = ""
-            End If
-            
-            ' VAMP calculation
-            .Range("K" & j & " ").Formula = _
-            "= H" & j & "*I" & j & ""
+    lastRow = .Cells(.Rows.count, "A").End(xlUp).Row
+    lastTradeRow = .Cells(.Rows.count, "H").End(xlUp).Row
 
-            .Range("L" & j & " ").Formula = _
-            "=SUM(K2:K" & j & ")"
-            
-            .Range("M" & j & " ").Formula = _
-            "=SUM(I2:I" & j & ")"
-                      
-            .Range("N" & j & " ").Value = _
-            "=(L" & j & ")/(M" & j & ")"
+    ' -------------------------------------------------------
+    ' BA spread
+    ws.Range("J1").Formula = "BA Spread"
+    ws.Range("J3").Formula = "=(E2-B2)/B2*10000"
+    ws.Range("J3").Copy Range("J4:J" & lastRow & "")
 
-        Next
-        
-        Range("K1").Value = "V*P"
-        Range("L1").Value = "totalVP"
-        Range("M1").Value = "totalV"
-        Range("N1").Value = "VWAP"
-    End With
+    ' Bid diff
+    ws.Range("K1").Formula = "Bid diff"
+    ws.Range("K3").Formula = "=A2-A3"
+    ws.Range("K3").Copy Range("K4:K" & lastRow & "")
+    
+    ' Ask diff
+    ws.Range("L1").Formula = "Ask diff"
+    ws.Range("L3").Formula = "=D2-D3"
+    ws.Range("L3").Copy Range("L4:L" & lastRow & "")
+    
+    
+    ' Trade diff
+    ws.Range("M1").Formula = "Trade diff"
+    ws.Range("M3").Formula = "=G2-G3"
+    ws.Range("M3").Copy Range("M4:M" & lastTradeRow & "")
+    
+    ' -------------------------------------------------------
+    ' BA spread
+    ' -------------------------------------------------------
+    
+    ' /* Geo mean */
+    
+    ' valid spread
+    ws.Range("N1").Formula = "spread valid"
+    ws.Range("N2").Formula = "=IF(AND(ISNUMBER(J2),J2>0),1,0)"
+    ws.Range("N2").Copy Range("N3:N" & lastRow & "")
+    ' log spread
+    ws.Range("O1").Formula = "log spd"
+    ws.Range("O2").Formula = "=IF(N2=1,LOG(J2),0)"
+    ws.Range("O2").Copy Range("O3:O" & lastRow & "")
+    ' sum the log form of spreads
+    ws.Range("P1").Formula = "spread log sum"
+    ws.Range("P2").Formula = "=SUMIF(O:O,"">0"")"
+    ws.Range("P3").Formula = "spread count"
+    ws.Range("P4").Formula = "=COUNTIF(N:N,1)"
+    ws.Range("P5").Formula = "geo spread"
+    ws.Range("P6").Formula = "=EXP(P2/P4)"
+    
+    ' /* Avg mean */
+    
+    ws.Range("P7").Formula = "sum"
+    ws.Range("P8").Formula = "=SUMIF(J:J,"">0"")"
+    ws.Range("P9").Formula = "avg spread"
+    ws.Range("P10").Formula = "=P8/P4"
+    
+    
+    ' /* Duration wtd spread */
+    ws.Range("T1").Formula = "spread wtd"
+    ws.Range("T2").Formula = "=IF(K2=0,1,K2*100000+1)" 'convert date to number
+    ws.Range("T2").Copy Range("T3:T" & lastRow & "")
+    
+    ws.Range("U1").Formula = "spread wtd sum"
+    ws.Range("U2").Formula = "=T2*N2*J2"
+    ws.Range("U2").Copy Range("U3:U" & lastRow & "")
+    
+    ws.Range("P23").Formula = "sum spread"
+    ws.Range("P24").Formula = "=SUMIF(U:U,"">0"")"
+    
+    ws.Range("V1").Formula = "wtd sum"
+    ws.Range("V2").Formula = "=T2*N2"
+    ws.Range("V2").Copy Range("V3:V" & lastRow & "")
+    ws.Range("P25").Formula = "sum weight"
+    ws.Range("P26").Formula = "=SUMIF(V:V,"">0"")"
+    
+    ws.Range("P27").Formula = "duration wtd spread"
+    ws.Range("P28").Formula = "=P24/P26"
 
+    ' -------------------------------------------------------
+    ' Quotes
+    ' -------------------------------------------------------
+    
+    ' /* Number of Quotes */
+    ws.Range("P11").Formula = "num of quots"
+    ws.Range("P12").Formula = "=COUNT(B:B)"
+    
+    ' /* Avg Quote size */
+    ws.Range("P13").Formula = "avg quote size"
+    ws.Range("P14").Formula = "=(AVERAGE(C:C)+AVERAGE(F:F))/2"
+    ws.Range("S1").Formula = "avg quote size"
+    ws.Range("S2").Formula = "=IF(C2>0, (C2+F2)/2,0)"
+    ws.Range("S2").Copy Range("S3:S" & lastRow & "")
+    
+    ' /* Geo Quote size */
+    ws.Range("Q1").Formula = "log quots"
+    ws.Range("Q2").Formula = "=IF(C2>0, LOG(S2),0)"
+    ws.Range("Q2").Copy Range("Q3:Q" & lastRow & "")
+    ws.Range("P15").Formula = "geo quote size"
+    ws.Range("P16").Formula = "=EXP(SUM(Q:Q)/P4)"
+    
+    ' /* Duration wtd quotes*/
+    ws.Range("W1").Formula = "quote size valid"
+    ws.Range("W2").Formula = "=IF(AND(S2>0,T2>0),1,0)"
+    ws.Range("W2").Copy Range("W3:W" & lastRow & "")
+    ws.Range("X1").Formula = "quote size wtd sum"
+    ws.Range("X2").Formula = "=S2*T2*W2"
+    ws.Range("X2").Copy Range("X3:X" & lastRow & "")
+    
+    ws.Range("P29").Formula = "weight quote size sum"
+    ws.Range("P30").Formula = "=SUMIF(X:X,"">0"")"
+    ws.Range("P31").Formula = "wtd quote size"
+    ws.Range("P32").Formula = "=P30/P26"
+    
+    ' -------------------------------------------------------
+    ' Trades
+    ' -------------------------------------------------------
+    
+    ' /* Number of Trades */
+    ws.Range("P17").Formula = "num trades"
+    ws.Range("P18").Formula = "=COUNT(I:I)"
+    
+    ' /* Avg of Trades */
+    ws.Range("P19").Formula = "avg trade size"
+    ws.Range("P20").Formula = "=AVERAGEIF(I:I,"">0"")"
+    
+    ' /* Geo of Trades */
+    ws.Range("R1").Formula = "log trades"
+    ws.Range("R2").Formula = "=IF(I2>0, LOG(I2),0)"
+    ws.Range("R2").Copy Range("R3:R" & lastTradeRow & "")
+    ws.Range("P21").Formula = "Geo trades"
+    ws.Range("P22").Formula = "=EXP(SUMIF(R:R,"">0"")/P18)"
+    
+    ' /* Duration wtd trade size */
+    ws.Range("Y1").Formula = "trade wtd"
+    ws.Range("Y2").Formula = "=IF(M2=0,1,M2*100000+1)"
+    ws.Range("Y2").Copy Range("Y3:Y" & lastRow & "")
+    
+    ws.Range("Z1").Formula = "trade wtd sum"
+    ws.Range("Z2").Formula = "=I2*Y2"
+    ws.Range("Z2").Copy Range("Z3:Z" & lastRow & "")
+    
+    ws.Range("AA1").Formula = "valid trade wtd sum"
+    ws.Range("AA2").Formula = "=IF(I2>0,Y2, 0)"
+    ws.Range("AA2").Copy Range("AA3:AA" & lastRow & "")
+    
+    ws.Range("P33").Formula = "wtd trade size sum"
+    ws.Range("P34").Formula = "=SUMIF(Z:Z,"">0"")"
+    ws.Range("P35").Formula = "trade wt sum"
+    ws.Range("P36").Formula = "=SUMIF(AA:AA,"">0"")"
+    ws.Range("P37").Formula = "wtd trade size"
+    ws.Range("P38").Formula = "=P34/P36"
+
+End With
 End Sub
+
 
 ' algorithm mean, and median for spread
 ' geomatrical mean is not calculated because negative and zero numbers are included
-Sub avgSpread(i As Integer)
-    
+Sub spreads(i As Long)
+        
     With Worksheets("Sheet3")
-        spd = ActiveSheet.Evaluate("AVERAGE(J:J)")
-        med = ActiveSheet.Evaluate("MEDIAN(J:J)")
+        geo = Range("P6").Value
+        avg = Range("P10").Value
+        wtd = Range("P28").Value
+        med = ActiveSheet.Evaluate("MEDIAN(IFERROR(IF(($J:$J <> """")*($J:$J > 0),$J:$J), """"))")
     End With
     
-    Worksheets("Sheet2").Range("M" & i & "").Value = spd
-    Worksheets("Sheet2").Range("AD" & i & "").Value = med
-    
+    Worksheets("Sheet2").Range("O" & i & "").Value = geo
+    Worksheets("Sheet2").Range("M" & i & "").Value = avg
+    Worksheets("Sheet2").Range("N" & i & "").Value = med
+    Worksheets("Sheet2").Range("P" & i & "").Value = wtd
 End Sub
 
 
-Sub numTrades(i As Integer)
-    
-    Dim lastTradeRow
-    
-    With Worksheets("Sheet3")
-        lastTradeRow = .Cells(.Rows.count, "H").End(xlUp).Row
-    End With
-    
-    Worksheets("Sheet2").Range("O" & i & "").Value = lastTradeRow
+Sub quotes(i As Long)
 
+With Worksheets("Sheet3")
+    num = Range("P12").Value
+    avg = Range("P14").Value
+    geo = Range("P16").Value
+    wtd = Range("P32").Value
+    med = ActiveSheet.Evaluate("MEDIAN(IFERROR(IF(($S:$S <> """")*($S:$S > 0),$S:$S), """"))")
+End With
+
+Worksheets("Sheet2").Range("Q" & i & "").Value = num
+Worksheets("Sheet2").Range("T" & i & "").Value = geo
+Worksheets("Sheet2").Range("R" & i & "").Value = avg
+Worksheets("Sheet2").Range("S" & i & "").Value = med
+Worksheets("Sheet2").Range("U" & i & "").Value = wtd
 End Sub
 
 
-Sub numQuotes(i As Integer)
-    
-    Dim lastTradeRow
-    
+Sub trades(i As Long)
+ 
     With Worksheets("Sheet3")
-        lastQuoteRow = .Cells(.Rows.count, "B").End(xlUp).Row
+        num = Range("P18").Value
+        avg = Range("P20").Value
+        geo = Range("P22").Value
+        wtd = Range("P38").Value
+        med = ActiveSheet.Evaluate("MEDIAN(IFERROR(IF(($I:$I <> """")*($I:$I > 0),$I:$I), """"))")
+
     End With
     
-    Worksheets("Sheet2").Range("P" & i & "").Value = lastQuoteRow
-
-End Sub
-
-Sub avgBidSize(i As Integer)
+    Worksheets("Sheet2").Range("V" & i & "").Value = num
+    Worksheets("Sheet2").Range("W" & i & "").Value = avg
+    Worksheets("Sheet2").Range("Y" & i & "").Value = geo
+    Worksheets("Sheet2").Range("X" & i & "").Value = med
+    Worksheets("Sheet2").Range("Z" & i & "").Value = wtd
     
-    With Worksheets("Sheet3")
-        avgSize = ActiveSheet.Evaluate("AVERAGE(C:C)")
-    End With
-
-    Worksheets("Sheet2").Range("Q" & i & "").Value = avgSize
-End Sub
-
-Sub avgAskSize(i As Integer)
-    
-    With Worksheets("Sheet3")
-        avgSize = ActiveSheet.Evaluate("AVERAGE(F:F)")
-    End With
-
-    Worksheets("Sheet2").Range("R" & i & "").Value = avgSize
-End Sub
-
-Sub avgBidPrice(i As Integer)
-    
-    With Worksheets("Sheet3")
-        avgPrice = ActiveSheet.Evaluate("AVERAGE(B:B)")
-        medPrice = ActiveSheet.Evaluate("MEDIAN(B:B)")
-        geoPrice = ActiveSheet.Evaluate("PRODUCT(B2:B3000^(1/COUNT(B2:B3000)))")
-        'geoPrice = ActiveSheet.Evaluate("GEOMEAN(B:B)")
-    End With
-
-    Worksheets("Sheet2").Range("S" & i & "").Value = avgPrice
-    Worksheets("Sheet2").Range("AE" & i & "").Value = medPrice
-    Worksheets("Sheet2").Range("AH" & i & "").Value = geoPrice
-    
-End Sub
-
-Sub avgAskPrice(i As Integer)
-    
-    With Worksheets("Sheet3")
-        avgPrice = ActiveSheet.Evaluate("AVERAGE(E:E)")
-        medPrice = ActiveSheet.Evaluate("MEDIAN(E:E)")
-        geoPrice = ActiveSheet.Evaluate("PRODUCT(E2:E3000^(1/COUNT(E2:E3000)))")
-    End With
-
-    Worksheets("Sheet2").Range("T" & i & "").Value = avgPrice
-    Worksheets("Sheet2").Range("AF" & i & "").Value = medPrice
-    Worksheets("Sheet2").Range("AI" & i & "").Value = geoPrice
-    
-End Sub
-
-Sub avgTradePrice(i As Integer)
-    
-    With Worksheets("Sheet3")
-    lastRow = .Cells(.Rows.count, "H").End(xlUp).Row - 1
-        avgPrice = ActiveSheet.Evaluate("AVERAGE(H:H)")
-        medPrice = ActiveSheet.Evaluate("MEDIAN(H:H)")
-        geoPrice = ActiveSheet.Evaluate("PRODUCT(H2:H" & lastRow & "^(1/COUNT(H2:H" & lastRow & ")))")
-    End With
-
-    Worksheets("Sheet2").Range("U" & i & "").Value = avgPrice
-    Worksheets("Sheet2").Range("AG" & i & "").Value = medPrice
-    Worksheets("Sheet2").Range("AJ" & i & "").Value = geoPrice
-    
-End Sub
-Sub avgTradeVolume(i As Integer)
-    
-    With Worksheets("Sheet3")
-        avgSize = ActiveSheet.Evaluate("AVERAGE(I:I)")
-    End With
-
-    Worksheets("Sheet2").Range("V" & i & "").Value = avgSize
-End Sub
-
-'[change]
-Sub avgVWAP(i As Integer)
-
-    With Worksheets("Sheet3")
-    lastRow = .Cells(.Rows.count, "N").End(xlUp).Row
-    For j = 2 To lastRow
-        If Not IsNumeric(Range("N" & j & "").Value) Then
-            Range("N" & j & "").Formula = ""
-        End If
-    Next
-    
-    avgPrice = ActiveSheet.Evaluate("AVERAGE(N2:N" & lastRow & ")")
-    End With
-
-    Worksheets("Sheet2").Range("W" & i & "").Value = avgPrice
-End Sub
-
-
-Sub avgTimeDiff(i As Integer)
-
-    Dim avgBid
-    Dim avgAsk
-    Dim avgTrade
-    
-    With Worksheets("Sheet3")
-        .Range("O:O").Formula = ""
-        .Range("P:P").Formula = ""
-        .Range("Q:Q").Formula = ""
-        
-        lastBidRow = .Cells(.Rows.count, "B").End(xlUp).Row
-        lastAskRow = .Cells(.Rows.count, "E").End(xlUp).Row
-        lastTradeRow = .Cells(.Rows.count, "H").End(xlUp).Row
-        
-        For j = 3 To lastBidRow - 1
-            .Range("O" & j & " ").Value = _
-            "= A" & j & " - A" & j + 1 & ""
-            
-        Next
-        
-        avgBid = ActiveSheet.Evaluate("AVERAGE(O:O)")
-        
-        For j = 3 To lastBidRow - 1
-            .Range("P" & j & " ").Value = _
-            "= D" & j & " - D" & j + 1 & ""
-        Next
-        
-        avgAsk = ActiveSheet.Evaluate("AVERAGE(P:P)")
-        
-        For j = 3 To lastBidRow - 1
-            .Range("Q" & j & " ").Value = _
-            "= G" & j & " - G" & j + 1 & ""
-        Next
-        
-        avgTrade = ActiveSheet.Evaluate("AVERAGE(Q:Q)")
-        
-        Range("O1").Value = "Bid Time Diff"
-        Range("P1").Value = "Ask Time Diff"
-        Range("Q1").Value = "Trade Time Diff"
-    End With
-    
-    Worksheets("Sheet2").Range("X" & i & "").Value = avgBid
-    Worksheets("Sheet2").Range("Y" & i & "").Value = avgAsk
-    Worksheets("Sheet2").Range("Z" & i & "").Value = avgTrade
-    
-End Sub
-
-
-Sub weitdSpread(i As Integer)
-
-    Dim count As Integer
-    Dim first
-    Dim last
-
-    
-    With Worksheets("Sheet3")
-    .Range("R:R").Formula = ""
-    .Range("S:S").Formula = ""
-    .Range("T:T").Formula = ""
-        
-    lastBidRow = .Cells(.Rows.count, "A").End(xlUp).Row
-        
-    count = 1
-    first = 2
-    last = 2
-
-    
-    For j = 2 To lastBidRow
-        prev = Range("A" & j - 1 & "").Value
-        curr = Range("A" & j & "").Value
-        
-        If (curr = prev) Then
-            count = count + 1
-            last = j
-        Else
-            
-            .Range("R" & first & " : R" & last & " ").Value = _
-            "= B" & first & ":B" & last & " * (" & count & "/" & lastBidRow & ") "
-
-            .Range("S" & first & " : S" & last & " ").Value = _
-            "= E" & first & ":E" & last & " * (" & count & "/" & lastBidRow & ") "
-            
-            .Range("T" & first & " : T" & last & " ").Value = _
-            "= J" & first & ":J" & last & " * (" & count & "/" & lastBidRow & ") "
-        
-        last = j
-        first = j
-        
-        count = 1
-        End If
-    Next
-    
-    Range("R1").Value = "Bid*Duration"
-    Range("S1").Value = "Ask*Duration"
-    Range("T1").Value = "Spread*Duration"
-    
-    bid = ActiveSheet.Evaluate("SUM(R:R)")
-    ask = ActiveSheet.Evaluate("SUM(S:S)")
-    spd = ActiveSheet.Evaluate("SUM(T:T)")
-    
-    End With
-    
-    Worksheets("Sheet2").Range("AA" & i & "").Value = bid
-    Worksheets("Sheet2").Range("AB" & i & "").Value = ask
-    Worksheets("Sheet2").Range("AC" & i & "").Value = spd
-       
 End Sub
 
